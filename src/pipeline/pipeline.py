@@ -1,6 +1,15 @@
+from typing import Callable
+
 from src.agents.agents import build_search_agent, build_reader_agent, writer_chain, critic_chain
 
-def research_pipeline(topic: str) -> dict:
+# on_step(step, status, output): status is "running" or "done"; output is set only when done
+StepCallback = Callable[[str, str, str | None], None]
+
+def research_pipeline(topic: str, on_step: StepCallback | None = None) -> dict:
+    def notify(step: str, status: str, output: str | None = None) -> None:
+        if on_step is not None:
+            on_step(step, status, output)
+
     # creating state memory. you can develop this concept further like RAG
     state = {}
 
@@ -8,6 +17,7 @@ def research_pipeline(topic: str) -> dict:
     print("\n"+" ="*50)
     print("step 1 - Search agent is working ...")
     print("="*50)
+    notify("search", "running")
 
     search_agent = build_search_agent()
     search_result = search_agent.invoke({
@@ -16,11 +26,13 @@ def research_pipeline(topic: str) -> dict:
     state["search_result"] = search_result['messages'][-1].content
 
     print("\n search result ", state['search_result'])
+    notify("search", "done", state["search_result"])
 
     # reader agent working
     print("\n"+" ="*50)
     print("step 2 - Reader agent is scraping top resources ...")
     print("="*50)
+    notify("read", "running")
 
     reader_agent = build_reader_agent()
     reader_result = reader_agent.invoke({
@@ -33,12 +45,14 @@ def research_pipeline(topic: str) -> dict:
     state['scraped_content'] = reader_result['messages'][-1].content
 
     print("\nscraped content: \n", state['scraped_content'])
+    notify("read", "done", state["scraped_content"])
 
     # step 3 - writer chain
 
     print("\n"+" ="*50)
     print("step 3 - Writer is drafting the report ...")
     print("="*50)
+    notify("write", "running")
 
     research_combined = (
         f"SEARTCH RESULTS : \n {state['search_result']} \n\n"
@@ -51,17 +65,20 @@ def research_pipeline(topic: str) -> dict:
     })
 
     print("\n Final Report:\n", state['report'])
+    notify("write", "done", state["report"])
 
     # critic report
 
     print("\n"+" ="*50)
     print("step 4 - critic is reviewing the repot ")
     print("="*50)
+    notify("critique", "running")
 
     state["feedback"] = critic_chain.invoke({
         "report": state["report"]
     })
 
     print("\n critic report \n", state['feedback'])
+    notify("critique", "done", state["feedback"])
 
     return state
