@@ -24,7 +24,7 @@ def build_reader_agent():
         tools=[scrape_url],
     )
 
-# Using LCL chain. LCEL: LangChain Execution Language which is a language for defining the execution flow of LangChain agents and tools. It allows you to specify how agents and tools should interact with each other to achieve a specific goal.
+# Using LCEL chain. LCEL: LangChain Execution Language which is a language for defining the execution flow of LangChain agents and tools. It allows you to specify how agents and tools should interact with each other to achieve a specific goal.
 # Writer chain
 writer_prompt = ChatPromptTemplate.from_messages([
     # builds a prompt with a system message (the persona) and a human message (the task).
